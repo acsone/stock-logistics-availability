@@ -1,0 +1,1 @@
+odoo-addon-stock-location-orderpoint @ git+https://github.com/OCA/stock-logistics-orderpoint.git@refs/pull/3/head#subdirectory=setup/stock_location_orderpoint
