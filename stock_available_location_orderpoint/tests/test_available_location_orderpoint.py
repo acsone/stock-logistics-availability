@@ -140,7 +140,8 @@ class TestStockAvailableLocationOrderpoint(TestLocationOrderpointCommon):
         self.assertEqual(move.state, "confirmed")
         self.product.invalidate_recordset()
         self.assertEqual(
-            7.0, self.product.with_context(location=self.shelf.id).quantity_to_replenish
+            13.0,
+            self.product.with_context(location=self.shelf.id).quantity_to_replenish,
         )
 
     def test_available_on_one_stock_location_with_shelf(self):

@@ -44,19 +44,37 @@ class ProductProduct(models.Model):
                 res[product.id]["quantity_to_replenish"] = 0
                 res[product.id]["quantity_in_replenishments"] = 0
                 return res, stock_dict
+        # Filter orderpoints that have their destination location as first parent
+        # of all locations only if location is in context as we want to
+        # get the first orderpoint for that (those) locaiton(s)
+        if self.env.context.get("location"):
+            orderpoint_ids = set()
+            for location in locations:
+                for orderpoint in orderpoints.filtered_domain(
+                    [("location_id", "parent_of", location.id)]
+                ).sorted(
+                    key=lambda orderpoint: (orderpoint.location_id.parent_path),
+                    reverse=True,
+                ):
+                    orderpoint_ids.add(orderpoint.id)
+                    break
+        else:
+            orderpoint_ids = set(orderpoints.ids)
+
+        final_orderpoints = orderpoint_obj.browse(orderpoint_ids)
 
         # Merge both source locations and destination locations
         location_ids = set(
-            orderpoints.location_id.ids + orderpoints.location_src_id.ids
+            final_orderpoints.location_id.ids + final_orderpoints.location_src_id.ids
         )
-        qties_on_locations = orderpoints._compute_quantities_dict(
+        qties_on_locations = final_orderpoints._compute_quantities_dict(
             self.env["stock.location"].browse(location_ids),
             self,
         )
         # Get current replenishments
         current_moves = self.env["stock.move"].read_group(
             [
-                ("location_id", "in", orderpoints.location_src_id.ids),
+                ("location_id", "in", final_orderpoints.location_src_id.ids),
                 ("state", "not in", ("done", "cancel")),
                 ("product_id", "in", self.ids),
             ],
@@ -70,7 +88,9 @@ class ProductProduct(models.Model):
             ]
         for product in self:
             qties_replenished_for_location = {product: 0.0}
-            for orderpoint in orderpoints:
+            for orderpoint in final_orderpoints:
+                # As we compute global quantities for the product, pass
+                # always 0 to the already replenished quantity
                 qty_to_replenish = orderpoint._get_qty_to_replenish(
                     product,
                     qties_on_locations,

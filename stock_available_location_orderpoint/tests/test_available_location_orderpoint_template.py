@@ -329,6 +329,14 @@ class TestStockAvailableLocationOrderpointTemplate(TestLocationOrderpointCommon)
 
         # We are in shelf context
         self.template.invalidate_recordset()
+        self.template.product_variant_ids.invalidate_recordset()
+        self.template.with_context(
+            location=self.shelf.id
+        )._compute_available_quantities_dict()
+        self.assertEqual(
+            5.0,
+            self.template.with_context(location=self.shelf.id).quantity_to_replenish,
+        )
         templates = self.template.with_context(location=self.shelf.id).search(
             [("quantity_to_replenish", "=", 5.0)]
         )
