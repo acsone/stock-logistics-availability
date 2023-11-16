@@ -43,6 +43,40 @@ class TestStockAvailableLocationOrderpoint(TestLocationOrderpointCommon):
         self.product.invalidate_recordset()
         self.assertEqual(10.0, self.product.quantity_to_replenish)
 
+    def test_available_on_replenish_with_incoming(self):
+        """
+        There is no stock available in replenishment location
+        Create an incoming move
+        Add an exclusion domain on orderpoint for supplier locations
+        """
+        self.orderpoint.stock_excluded_location_domain_char = (
+            "[('location_id.usage', '!=', 'supplier')]"
+        )
+        self.env["stock.quant"].with_context(inventory_mode=True).create(
+            {
+                "inventory_quantity": 10.0,
+                "location_id": self.location_src.id,
+                "product_id": self.product.id,
+            }
+        )._apply_inventory()
+        move = self._create_outgoing_move(12)
+        move = self._create_outgoing_move(1)
+        self.assertEqual(move.state, "confirmed")
+        # Create incoming move to Stock
+        in_move = self.env["stock.move"].create(
+            {
+                "name": "In Move",
+                "location_id": self.env.ref("stock.stock_location_suppliers").id,
+                "location_dest_id": self.orderpoint.location_id.id,
+                "product_id": self.product.id,
+                "product_uom_qty": 5.0,
+                "product_uom": self.product.uom_id.id,
+            }
+        )
+        in_move._action_confirm()
+        self.product.invalidate_recordset()
+        self.assertEqual(10.0, self.product.quantity_to_replenish)
+
     def test_available_on_multi_replenish(self):
         """
         There is no stock available in replenishment location

@@ -36,23 +36,22 @@ class ProductProduct(models.Model):
         orderpoint_obj = self.env["stock.location.orderpoint"]
         if orderpoint_obj.check_access_rights("read", raise_exception=False):
             orderpoint_domain = orderpoint_obj._prepare_orderpoint_domain_location(
-                locations.ids
+                location_ids=locations.ids, use_to_compute_available_quantities=True
             )
+            # First, search for orderpoints that are dedicated to compute global
+            # quantities, then, if not found, search for all.
             orderpoints = orderpoint_obj.search(orderpoint_domain)
+            if not orderpoints:
+                orderpoint_domain = orderpoint_obj._prepare_orderpoint_domain_location(
+                    location_ids=locations.ids
+                )
+                orderpoints = orderpoint_obj.search(orderpoint_domain)
         else:
             for product in self:
                 res[product.id]["quantity_to_replenish"] = 0
                 res[product.id]["quantity_in_replenishments"] = 0
                 return res, stock_dict
 
-        # Merge both source locations and destination locations
-        location_ids = set(
-            orderpoints.location_id.ids + orderpoints.location_src_id.ids
-        )
-        qties_on_locations = orderpoints._compute_quantities_dict(
-            self.env["stock.location"].browse(location_ids),
-            self,
-        )
         # Get current replenishments
         current_moves = self.env["stock.move"].read_group(
             [
@@ -71,6 +70,9 @@ class ProductProduct(models.Model):
         for product in self:
             qties_replenished_for_location = {product: 0.0}
             for orderpoint in orderpoints:
+                qties_on_locations = orderpoint._compute_quantities_dict(
+                    products=product,
+                )
                 # As we compute global quantities for the product, pass
                 # always 0 to the already replenished quantity
                 qty_to_replenish = orderpoint._get_qty_to_replenish(

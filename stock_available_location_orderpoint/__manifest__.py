@@ -15,5 +15,9 @@
         "stock_available",
         "stock_available_location_get_domain",
     ],
-    "data": ["views/product_product.xml", "views/product_template.xml"],
+    "data": [
+        "views/product_product.xml",
+        "views/product_template.xml",
+        "views/stock_location_orderpoint.xml",
+    ],
 }
