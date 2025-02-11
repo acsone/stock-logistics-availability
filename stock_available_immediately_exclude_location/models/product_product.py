@@ -47,24 +47,9 @@ class ProductProduct(models.Model):
         Parses the context and returns a list of location_ids based on it that
         should be excluded from the immediately_usable_qty
         """
-        quant_domain = self.env["product.product"]._get_domain_locations()[0]
-        # Adapt the domain on quants (which normally contains only company_id and
-        # location_id) for stock.location and add the criteria on
-        # exclude_from_immediately_usable_qty to it.
-        # Be sure to exclude potential fields that couldn't belong to stock.location
-        # and replace such term by something True domain compatible
-        location_domain = []
-        location_fields = self.env["stock.location"].fields_get()
-        for element in quant_domain:
-            if expression.is_leaf(element) and element[0] not in location_fields:
-                # exclude the element from domain and replace by something True
-                location_domain.append((1, "=", 1))  # True and domain compatible
-            elif expression.is_leaf(element):
-                location_domain.append(
-                    (element[0].replace("location_id.", ""), element[1], element[2])
-                )
-            else:
-                location_domain.append(element)
+        location_domain = self.env[
+            "product.product"
+        ]._get_domain_location_for_locations()
         return expression.AND(
             [location_domain, [("exclude_from_immediately_usable_qty", "=", True)]]
         )
