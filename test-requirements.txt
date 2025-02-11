@@ -1,1 +1,2 @@
 odoo_test_helper
+odoo-addon-stock-available-location-get-domain @ git+https://github.com/OCA/stock-logistics-availability.git@refs/pull/11/head#subdirectory=setup/stock_available_location_get_domain
