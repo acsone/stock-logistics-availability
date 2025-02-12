@@ -18,10 +18,7 @@ class StockLocation(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         res = super().create(vals_list)
-        for vals in vals_list:
-            if vals.get("exclude_from_immediately_usable_qty"):
-                res._invalidate_location_ids_excluded_from_immediatley_usable_qty_cache()
-                break
+        self._invalidate_location_ids_excluded_from_immediatley_usable_qty_cache()
         return res
 
     def write(self, vals):
