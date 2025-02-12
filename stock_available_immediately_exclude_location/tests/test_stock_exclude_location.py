@@ -59,3 +59,9 @@ class TestStockLogisticsWarehouse(TransactionCase):
         self.product.invalidate_recordset()  # force recompute
         q = self.product.with_context(**ctx_loc).immediately_usable_qty
         self.assertEqual(q, 7.0)
+        # test with a date in the past
+        self.product.invalidate_recordset()
+        q = self.product.with_context(
+            **ctx_loc, to_date="2023-01-01"
+        ).immediately_usable_qty
+        self.assertEqual(q, 0.0)
