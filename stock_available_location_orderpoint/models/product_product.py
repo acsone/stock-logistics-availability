@@ -10,7 +10,6 @@ from odoo.addons.stock.models.product import OPERATORS
 
 
 class ProductProduct(models.Model):
-
     _inherit = "product.product"
 
     quantity_to_replenish = fields.Float(
@@ -56,20 +55,17 @@ class ProductProduct(models.Model):
             self,
         )
         # Get current replenishments
-        current_moves = self.env["stock.move"].read_group(
+        current_moves = self.env["stock.move"].search(
             [
-                ("location_id", "in", orderpoints.location_src_id.ids),
-                ("state", "not in", ("done", "cancel")),
-                ("product_id", "in", self.ids),
-            ],
-            ["product_id", "product_uom_qty:sum"],
-            ["product_id"],
+                ("location_orderpoint_id", "in", orderpoints.ids),
+                ("state", "not in", ("done", "cancel", "draft")),
+            ]
         )
         quantities_in_replenishments = defaultdict(lambda: defaultdict(lambda: 0))
         for current_move in current_moves:
-            quantities_in_replenishments[current_move["product_id"][0]] = current_move[
-                "product_uom_qty"
-            ]
+            quantities_in_replenishments[current_move.product_id.id] = (
+                current_move.product_uom_qty
+            )
         for product in self:
             qties_replenished_for_location = {product: 0.0}
             for orderpoint in orderpoints:
